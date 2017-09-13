@@ -1,0 +1,107 @@
+/**
+Authors: Dalton Becker & Sam Selkregg
+Lab: Line Following
+**/
+
+
+int LEFT_MOTOR = 0;//controls left motor input
+int RIGHT_MOTOR = 3;//controls right motor input
+int sensor;//keeps track of what the sensor is reading
+int leftTurn = 0;//keeps track of how long it should spend turning
+int rightTurn = 0;//keeps track of how long it should spend turning
+
+/*
+*Method for moving the forward
+*/
+void forward()
+{
+    motor(LEFT_MOTOR, 50);
+    motor(RIGHT_MOTOR, -50);
+}
+
+/*
+*method for turning right
+*/
+void right()
+{
+    motor(LEFT_MOTOR, 50);
+    motor(RIGHT_MOTOR, 50);
+}
+
+/*
+*method for turning left
+*/
+void left()
+{
+    motor(LEFT_MOTOR, -50);
+    motor(RIGHT_MOTOR, -50);
+}
+
+/*
+*method for going backwards
+*/
+void back()
+{
+    motor(LEFT_MOTOR, -50);
+    motor(RIGHT_MOTOR, 50);
+}
+
+/*
+*method for stopping all the motors
+*/
+void stop()
+{
+    ao();
+}
+
+/*
+*checks what the sensor is reading
+*/
+void checkSensor()
+{
+    sensor = analog(4);
+    printf("%d ", sensor);
+}
+
+/*
+*method for searching for the line when it is off of the line
+*/
+void findLine()
+{
+    while(sensor < 50)
+      {
+        if(leftTurn<15)
+          {
+            left();
+            sleep(.1);
+            stop();
+            leftTurn++;
+        }
+        else
+          {
+            right();
+            sleep(.1);
+            stop();
+        }
+        checkSensor();
+    }
+    leftTurn = 0;
+}
+
+/*
+Main function
+*/
+void main()
+{
+    while(start_button())//while start button is true
+      {
+        checkSensor();   //check sensor
+        if(sensor < 50)
+          {
+            findLine(); //if sensor is read under 50 run findLine()
+        }
+        forward(); //move forward for .3 seconds before checking sensors again
+        sleep(.3); 
+    }
+}
+
