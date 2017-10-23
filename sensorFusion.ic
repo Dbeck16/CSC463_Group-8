@@ -1,0 +1,140 @@
+/**
+Authors: Dalton Becker & Sam Selkregg
+Lab: Sensor fusion lab
+Uses reflective opto sensors for distance, uses light sensors
+to detect a light source, with an objective to navigate a maze.
+**/
+
+
+int LEFT_MOTOR = 0;//controls left motor input
+int RIGHT_MOTOR = 3;//controls right motor input
+int sensorFrontLight;//analog sensor detecting the amount of light in front of the robot
+int sensorFrontOptoL;//analog input that recieves distance of the wall
+int sensorFrontOptoR;
+int sensorRight;//analog input that determines the distance of the wall on the side of the robot
+
+/*
+*Method for moving the forward
+*/
+void forward()
+{
+    motor(LEFT_MOTOR, 100);
+    motor(RIGHT_MOTOR, 100);
+}
+
+/*
+*method for turning right
+*/
+void right()
+{
+    motor(LEFT_MOTOR, -100);
+    motor(RIGHT_MOTOR, 100);
+}
+
+/*
+*method for turning left
+*/
+void left()
+{
+    motor(LEFT_MOTOR, 100);
+    motor(RIGHT_MOTOR, -100);
+}
+
+/*
+*method for going backwards
+*/
+void back()
+{
+    motor(LEFT_MOTOR, -50);
+    motor(RIGHT_MOTOR, -50);
+}
+
+/*
+*method for stopping all the motors
+*/
+void stop()
+{
+    ao();
+}
+
+/*
+Updates the sensor values
+*/
+void checkSensors()
+{
+    sensorFrontLight = analog(4);
+    sensorFrontOptoL = analog(6);
+    sensorFrontOptoR = analog(2);
+    sensorRight = analog(5);
+}
+
+void action()
+{
+    checkSensors();
+    if(sensorFrontLight>50)
+      {
+        
+        if(sensorFrontOptoL<10 || sensorFrontOptoR<10)
+        {
+          //stops the robot, gets it away from the wall, and will turn left
+            findWall();
+        } else if(sensorRight<5)
+          {
+           //bumps the robot left if the sensor on the right goes off
+           printf(sensorRight);
+           stop();
+           sleep(.1);
+           left();
+           sleep(.1);
+          }
+        forward();
+        sleep(.3);
+    }
+    else
+      {
+        forward();
+        sleep(.5);
+    }
+}
+void findWall()
+{
+    back();
+    sleep(.2);
+    if(sensorFrontOptoL > sensorFrontOptoR)
+      {
+        while(sensorFrontOptoL > sensorFrontOptoR)
+          {
+            checkSensors();
+            right();
+            sleep(.1);
+          }
+    }
+    else
+      {
+         while(sensorFrontOptoL < sensorFrontOptoR)
+          {
+            checkSensors();
+            left();
+            sleep(.1);
+          }
+    }
+    
+    printf(sensorFrontOptoL);
+          stop();
+          sleep(.1);
+          back();
+          sleep(1.0);
+          left();
+        sleep(1.0);
+}      
+/*
+Main function
+*/
+void main()
+{
+    while(1)//while start button is true
+      {
+        action();
+    }
+}
+
