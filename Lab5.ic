@@ -1,0 +1,204 @@
+/**
+Authors: Dalton Becker & Sam Selkregg
+Lab: Maze with Touch Sensors implementing tabular sarsa
+**/
+
+
+int LEFT_MOTOR = 0;//controls left motor input
+int RIGHT_MOTOR = 3;//controls right motor input
+//sensor variables
+int sensorFrontLeft = 11; 
+int sensorFrontRight = 12;
+int sensorSideRight = 13;
+int sensorSideLeft = 15;
+int sensorBack = 14;
+//initialize Q, r, rTotal and a variables for beginning action
+//modIntensity used to determine how quickly we will change decisions
+float Q=0.0, r=0.0, rTotal=0.0, prevQ=0.0; 
+int a=0, modIntensity=1;
+float rTemp, QCurrent;
+int iterations = 0;
+
+/*
+*Method for moving the forward
+*/
+void forward()
+{
+    motor(LEFT_MOTOR, 50);
+    motor(RIGHT_MOTOR, 50);
+}
+
+/*
+*method for turning right
+*/
+void right()
+{
+    motor(LEFT_MOTOR, 50);
+    motor(RIGHT_MOTOR, -50);
+}
+
+/*
+*method for turning left
+*/
+void left()
+{
+    motor(LEFT_MOTOR, -50);
+    motor(RIGHT_MOTOR, 50);
+}
+
+/*
+*method for going backwards
+*/
+void back()
+{
+    motor(LEFT_MOTOR, -50);
+    motor(RIGHT_MOTOR, -50);
+}
+
+/*
+*method for stopping all the motors
+*/
+void stop()
+{
+    ao();
+}
+
+/*
+* selects the action based on a Q value which is updated using r (the reward value)
+*/
+void performAction()
+{
+ /*
+ * action array with values representing possible actions to be taken
+ * 0 = Forward, 1=Left Bump, 2=Left Turn, 3=Right Bump, 4=RightTurn, 5=Backwards
+ */
+ int action[6] = {1,2,3,4,5,6};
+ /*
+ * switch statement to choose action, does nothing if invalid action is chosen
+ */
+ switch(a) {
+       case 0 :
+          forward();
+    sleep(3.0);
+          break;
+       case 1 :
+      left();
+    sleep(.3);
+    break;
+       case 2 :
+      left();
+          sleep(2.0);
+          break;
+       case 3 :
+       right();
+       sleep(.3);
+          break;
+       case 4 :
+          right();
+    sleep(2.0);
+          break;
+    case 5 :
+    back();
+    sleep(3.0);
+    break;
+    default :
+       ao();
+    }
+    /*
+    *observes and updates the r, Q and a values after an action has been taken
+    */
+    observeRewards();
+}
+
+/*
+* observe rewards, updates q r and a values
+*/
+void observeRewards()
+{
+ //check sensors for collisions, update r accordingly
+ if(digital(sensorFrontLeft) && digital(sensorFrontRight))
+ {
+  r = -0.75;
+ } else if(digital(sensorFrontLeft))
+ {
+  r = -0.5;
+ } else if(digital(sensorFrontRight))
+ {
+  r = -0.5;
+ } else if(digital(sensorSideRight))
+ {
+  r = -0.5;
+ } else if(digital(sensorSideLeft))
+ {
+  r = -0.5;
+ } else if(digital(sensorBack))
+ {
+  r = -0.75;
+ } else
+ {
+  r = 1.5;
+ }
+ 
+ //update Q value using r
+ Q = Q + r;
+ //use rTemp to make values positive for rTotal    
+ if(r<0.0)
+ {
+  rTemp = r * (-1.0);
+ }
+ //update rTotal using r, rTotal is only positive because it measures how much r changes
+ //this refrains the robot from changing to the same action every time a penalty is assessed
+ rTotal = rTotal + rTemp;
+ //update a using Q
+ //the lower the mod intensity, the more inclined the robot will be to change its action
+ if(rTotal<(float)modIntensity)
+ {
+  //action stays the same
+  a = a;
+ } else
+      {
+        //get difference in prevQ and Q to get a Q to select an a
+        QCurrent = Q + prevQ;
+     //action changes, rTotal is reset, prevQ is set to Q
+     prevQ = Q;
+     a = (int)QCurrent;
+     //make the a value positive to correctly pick an action
+     if(a<0)
+       {
+         a = a * (-1);
+     }
+  rTotal = 0.0;
+  if(a>6)
+  {
+   a = a%6;
+  }
+ }
+}
+
+/*
+Main function
+*/
+void main()
+{
+  while(1)//robot is on
+  {
+  //every sixth action, perform a random action
+  if((iterations%6)==0)
+  {
+   //increase mod intensity every 6 actions
+   modIntensity = modIntensity++;
+  }
+  //preforms action
+        performAction();
+  //takes a break
+  sleep(.1);
+  //reset mod intensity
+  if(modIntensity=5)
+  {
+   //updates the mod intensity
+   modIntensity = 1;
+  }
+  //adds an iteration
+  iterations++;
+    }
+}
