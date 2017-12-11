@@ -1,0 +1,229 @@
+/**
+* Intro to Robotics - Final Project
+* Group 8: Sam Selkregg and Dalton Becker
+*
+* This code will make a robot follow a line using reflective opto sensors,
+* detect light on a block with light sensors, grab said block with a claw, using
+* reflective opto sensors to determine when the claw closes. Then, drop
+* the block off in the collection area. Repeat.
+*/
+
+//GLOBAL VARIABLES
+//for directional variables: (0 = left, 1 = right)
+int gatheredBlocks = 0;
+int lastTurn;
+int side = 0; //0 for starting side, 1 for collection side
+int collectionDirection;
+int lastDropDirection = 1;
+float dropOffDistance = 6.0;
+int clawStatus = 1;
+
+//sensor variables
+int rightLineSensor, leftLineSensor, frontLineSensor, rearLineSensor;
+int lineDetectionMin;
+int rearTouch;
+int clawOpto;
+int blockDetectionMin;
+int leftLight, rightLight;
+int lightDetectionMin;
+int inclineDetection;
+int motorLeft = 0, motorRight = 1, clawMotor = 2;
+
+int main(void)
+{
+    //runs until desired blocks are gathered
+    while(gatheredBlocks<3)
+      {
+        search();
+        transportBlock();
+        placeBlock();
+    }
+    //return to start
+    while(clawOpto<blockDetectionMin)
+      {
+        forward();
+        sleep(1.0);
+    }
+    //code to return robot to the start
+    return 0;
+}
+
+/**
+* makes the robot search for blocks
+*/
+void search()
+{
+    while(clawStatus!=1)
+      {
+        if((rightLineSensor>>lineDetectionMin)&&(leftLineSensor>>lineDetectionMin))
+          {
+            //read light sensors
+            if(leftLight>>lightDetectionMin)
+              {
+                turnLeft();
+                while(clawOpto<blockDetectionMin)
+                  {
+                    forward();
+                    sleep(.2);
+                }
+                forward();
+                sleep(.1);
+                closeClaw();
+            }else if(rightLight>>lightDetectionMin)
+              {
+                turnRight();
+                while(clawOpto<blockDetectionMin)
+                  {
+                    forward();
+                    sleep(.2);
+                }
+                forward();
+                sleep(.1);
+                closeClaw();
+                clawStatus = 1;
+            }else 
+            {
+                forward();
+                sleep(.5);
+            }
+        }
+    }
+}
+
+void transportBlock()
+{
+    
+    if((rightLineSensor>>lineDetectionMin)&&(leftLineSensor>>lineDetectionMin))
+      {
+        if(gatheredBlocks>0)
+          {
+            //turn opposite of last turn
+            if(lastTurn == 0)
+              {
+                turnRight();
+            }else
+              {
+                turnLeft();
+            }
+            //reverse until touch sensor goes off
+            while((rearTouch!=1)&&(frontLineSensor>>lineDetectionMin))
+              {
+                backward();
+                sleep(.5);
+            }
+            //bump forward
+            forward();
+            sleep(.1);
+        }else
+          {
+            //turn towards last turn, everything else the same
+            //turn opposite of last turn
+            if(lastTurn == 1)
+              {
+                turnRight();
+            }else
+              {
+                turnLeft();
+            }
+            //reverse until touch sensor goes off
+            while((rearTouch!=1)&&(frontLineSensor>>lineDetectionMin))
+              {
+                backward();
+                sleep(.5);
+            }
+            //bump forward
+            forward();
+            sleep(.1);
+        }
+    }
+}
+
+void placeBlock()
+{
+    //turn away from lastDropDirection
+    if(lastDropDirection==1)
+      {
+        turnLeft();
+    }else
+      {
+        turnRight();
+    }
+    //go forward dropOffDistance
+    forward();
+    sleep(dropOffDistance);
+    openClaw();
+    //reverse equal distance
+    backward();
+    sleep(dropOffDistance);
+    if(lastDropDirection == 0)
+      {
+        dropOffDistance = dropOffDistance/2.0;
+        lastDropDirection = 1;
+    }else
+      {
+        lastDropDirection = 0;
+    }
+    //turn opposite of last turn until bot back on the line
+    if(lastTurn == 0)
+      {
+        turnRight();
+    }else
+      {
+        turnLeft();
+    }
+
+    gatheredBlocks++;
+}
+
+void turnLeft()
+{
+    //motor values
+    lastTurn = 0;
+}
+
+void turnRight()
+{
+    //motor values
+    lastTurn = 1;
+}
+
+void basicLeft()
+{
+    motor(0, -100);
+    motor(3, 100);
+}
+
+void basicRight()
+{
+    motor(0, 100);
+    motor(3, -100);
+    //motor values
+}
+
+void forward()
+{
+    motor(0, 100);
+    motor(3, 100);
+    //motorValues
+}
+
+void backward()
+{
+    motor(0, -100);
+    motor(3, -100);
+    //motor values
+}
+
+void openClaw()
+{
+    //motorValues
+    clawStatus = 1;
+}
+
+void closeClaw()
+{
+    //motorValues
+    clawStatus = 0;
+}
+
+    
