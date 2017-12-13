@@ -13,20 +13,18 @@
 int gatheredBlocks = 0;
 int lastTurn;
 int side = 0; //0 for starting side, 1 for collection side
-int collectionDirection;
 int lastDropDirection = 1;
 float dropOffDistance = 6.0;
 int clawStatus = 1;
 
 //sensor variables
-int rightLineSensor, leftLineSensor, frontLineSensor, rearLineSensor;
-int lineDetectionMin;
-int rearTouch;
-int clawOpto;
+int rightLineSensor=3, leftLineSensor=4, frontLineSensor=1;
+int lineDetectionMin=100;
+int rearTouch=12;
+int clawOpto=5;
 int blockDetectionMin;
-int leftLight, rightLight;
-int lightDetectionMin;
-int inclineDetection;
+int leftLight=6, rightLight=2;
+int lightDetectionMin=200;
 int motorLeft = 0, motorRight = 1, clawMotor = 2;
 
 int main(void)
@@ -39,7 +37,7 @@ int main(void)
         placeBlock();
     }
     //return to start
-    while(clawOpto<blockDetectionMin)
+    while(1)
       {
         forward();
         sleep(1.0);
@@ -53,15 +51,21 @@ int main(void)
 */
 void search()
 {
-    while(clawStatus!=1)
+    while(analog(frontLineSensor)<<lineDetectionMin)
       {
-        if((rightLineSensor>>lineDetectionMin)&&(leftLineSensor>>lineDetectionMin))
+        if((analog(rightLineSensor)<<lineDetectionMin)&&(analog(leftLineSensor)<<lineDetectionMin))
           {
             //read light sensors
-            if(leftLight>>lightDetectionMin)
+            if(analog(leftLight)<<lightDetectionMin)
               {
                 turnLeft();
-                while(clawOpto<blockDetectionMin)
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnLeft();
+                    sleep(.2);
+                }
+                while(analog(clawOpto)<=blockDetectionMin)
                   {
                     forward();
                     sleep(.2);
@@ -69,10 +73,16 @@ void search()
                 forward();
                 sleep(.1);
                 closeClaw();
-            }else if(rightLight>>lightDetectionMin)
+            }else if(analog(rightLight)<<lightDetectionMin)
               {
                 turnRight();
-                while(clawOpto<blockDetectionMin)
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnRight();
+                    sleep(.2);
+                }
+                while(analog(clawOpto)<=blockDetectionMin)
                   {
                     forward();
                     sleep(.2);
@@ -88,12 +98,48 @@ void search()
             }
         }
     }
+    //if the line is no longer being followed, get back on the line
+    if(analog(frontLineSensor)>>lineDetectionMin)
+      {
+        float left = .25, right = .5;
+        int track = 1, track2 = 2;
+        while(analog(frontLineSensor)>>lineDetectionMin)
+          {
+            turnLeft();
+            sleep(left);
+            if(analog(frontLineSensor)<<lineDetectionMin)
+              {
+                search();
+            }
+            turnRight();
+            sleep(right);
+            if(analog(frontLineSensor)<<lineDetectionMin)
+              {
+                search();
+            }
+            if(track>>track2)
+              {
+                right = right + .5;
+                track = track + 2;
+            }else
+              {
+                left = left + .5;
+                track2 = track2 + 2;
+            }
+        }
+    }
 }
 
 void transportBlock()
 {
+    //reverse until the intersection is reached
+    while((analog(rightLineSensor)>>lineDetectionMin)||(analog(leftLineSensor)>>lineDetectionMin))
+      {
+        backward();
+        sleep(.25);
+    }
     
-    if((rightLineSensor>>lineDetectionMin)&&(leftLineSensor>>lineDetectionMin))
+    if((analog(rightLineSensor)<<lineDetectionMin)&&(analog(leftLineSensor)<<lineDetectionMin))
       {
         if(gatheredBlocks>0)
           {
@@ -101,12 +147,24 @@ void transportBlock()
             if(lastTurn == 0)
               {
                 turnRight();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnRight();
+                    sleep(.2);
+                }
             }else
               {
                 turnLeft();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnLeft();
+                    sleep(.2);
+                }
             }
             //reverse until touch sensor goes off
-            while((rearTouch!=1)&&(frontLineSensor>>lineDetectionMin))
+            while((digital(rearTouch)!=1)&&(analog(frontLineSensor)<<lineDetectionMin))
               {
                 backward();
                 sleep(.5);
@@ -121,12 +179,24 @@ void transportBlock()
             if(lastTurn == 1)
               {
                 turnRight();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnRight();
+                    sleep(.2);
+                }
             }else
               {
-                turnLeft();
+                turnRight();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnRight();
+                    sleep(.2);
+                }
             }
             //reverse until touch sensor goes off
-            while((rearTouch!=1)&&(frontLineSensor>>lineDetectionMin))
+            while((digital(rearTouch)!=1)&&(analog(frontLineSensor)<<lineDetectionMin))
               {
                 backward();
                 sleep(.5);
@@ -136,17 +206,29 @@ void transportBlock()
             sleep(.1);
         }
     }
-}
+   }
 
 void placeBlock()
 {
     //turn away from lastDropDirection
     if(lastDropDirection==1)
       {
-        turnLeft();
+        turnRight();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnRight();
+                    sleep(.2);
+                }
     }else
       {
-        turnRight();
+        turnLeft();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnLeft();
+                    sleep(.2);
+                }
     }
     //go forward dropOffDistance
     forward();
@@ -167,50 +249,67 @@ void placeBlock()
     if(lastTurn == 0)
       {
         turnRight();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnRight();
+                    sleep(.2);
+                }
     }else
       {
-        turnLeft();
+       turnLeft();
+                sleep(.5);
+                while(analog(frontLineSensor)>>lineDetectionMin)
+                  {
+                    turnLeft();
+                    sleep(.2);
+        }
     }
-
+    
     gatheredBlocks++;
+    
 }
 
 void turnLeft()
 {
     //motor values
+    motor(0, -50);
+    motor(3, 50);
     lastTurn = 0;
 }
 
 void turnRight()
 {
     //motor values
+    motor(0, 50);
+    motor(3, -50);
     lastTurn = 1;
 }
 
 void basicLeft()
 {
-    motor(0, -100);
-    motor(3, 100);
+    motor(0, -50);
+    motor(3, 50);
 }
 
 void basicRight()
 {
-    motor(0, 100);
-    motor(3, -100);
+    motor(0, 50);
+    motor(3, -50);
     //motor values
 }
 
 void forward()
 {
-    motor(0, 100);
-    motor(3, 100);
+    motor(0, 50);
+    motor(3, 50);
     //motorValues
 }
 
 void backward()
 {
-    motor(0, -100);
-    motor(3, -100);
+    motor(0, -50);
+    motor(3, -50);
     //motor values
 }
 
@@ -225,5 +324,3 @@ void closeClaw()
     //motorValues
     clawStatus = 0;
 }
-
-    
